@@ -1,3 +1,6 @@
+// This script will (eventually) apply each comp and then export to a PDF Presentation with overlays of font information
+// Written by David Klawitter
+
 #target photoshop
 
 main();
