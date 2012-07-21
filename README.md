@@ -1,3 +1,3 @@
-Introduction
+What is completer?
 ---
-Comp.leter is meant to simplify the delivery of creative comps to developers by directly overlaying font information (size, font face, and color) on the comps.  The script will ultimately operate like "Layer Comps to PDF…" but with the added bonus of these details to assist developers.
+completer is a Photoshop Script written in Javascript and intended to simplify the handoff of designer created PSD's to developers. Rather than simply exporting layers or layer comps to PDF, completer will generate versions that overlay font face, color, size and other information that may be useful during development.
