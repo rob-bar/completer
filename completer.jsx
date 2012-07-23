@@ -44,12 +44,12 @@ function isTextLayer(layer) {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// Function: userFriendly
+// Function: userFriendlyConstant
 // Usage: Converts constants to user-friendly copy
 // Input: string
 // Return: a string
 ///////////////////////////////////////////////////////////////////////////
-function userFriendly(obj) 
+function userFriendlyConstant(obj) 
 {
   if (obj == "TypeUnits.PIXELS")
     return "px";
@@ -76,9 +76,50 @@ function positionLayer( lyr, x, y ){// layerObject, Number, Number
    lyr.translate (deltaX, deltaY);
 }
 
+function fillBehind( color ) { // Solidcoloe object
+    var desc = new ActionDescriptor();
+    desc.putEnumerated( charIDToTypeID( "Usng" ), charIDToTypeID( "FlCn" ), charIDToTypeID( "Clr " ) );
+        var colorDesc = new ActionDescriptor();
+        colorDesc.putUnitDouble( charIDToTypeID( "H   " ), charIDToTypeID( "#Ang" ), color.hsb.hue );
+        colorDesc.putDouble( charIDToTypeID( "Strt" ), color.hsb.saturation  );
+        colorDesc.putDouble( charIDToTypeID( "Brgh" ), color.hsb.brightness  );
+    desc.putObject( charIDToTypeID( "Clr " ), charIDToTypeID( "HSBC" ) , colorDesc );
+    desc.putUnitDouble( charIDToTypeID( "Opct" ), charIDToTypeID( "#Prc" ), 100.000000 );
+    desc.putEnumerated( charIDToTypeID( "Md  " ), charIDToTypeID( "BlnM" ), charIDToTypeID( "Bhnd" ) );
+    executeAction( charIDToTypeID( "Fl  " ), desc, DialogModes.NO );
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Function: fillLayer
+// Usage: Fills a document selection with color used bounds of the provided layer object
+// Input: Layer
+///////////////////////////////////////////////////////////////////////////
+function fillLayer(layer) {
+  // Determine the layer bounds
+  var a = [layer.bounds[0], layer.bounds[1]];
+  var b = [layer.bounds[2], layer.bounds[1]];
+  var c = [layer.bounds[0], layer.bounds[3]];
+  var d = [layer.bounds[2], layer.bounds[3]];
+
+  // Fill the backing layer with background fill color
+  var fillColor = new SolidColor();
+  fillColor.rgb.red = 255;
+  fillColor.rgb.green = 0;
+  fillColor.rgb.blue = 0;
+  
+  //activeDocument.selection.select([[0,0], [50,0], [50,50], [0,50]], SelectionType.REPLACE, 0, false);
+  activeDocument.selection.select([c, d, b, a], SelectionType.REPLACE, 0, false);
+  activeDocument.selection.expand(10);
+  activeDocument.selection.fill(fillColor, ColorBlendMode.NORMAL, 100, false);
+}
+
+function getFontDisplay(textItemRef) {
+  return textItemRef.font + '\r' + Math.round(textItemRef.size) + ' ' + userFriendlyConstant(app.preferences.typeUnits) + '\r#' + textItemRef.color.nearestWebColor.hexValue;
+}
+
 function main()
 {
-  var layerCompsCount = app.activeDocument.layerComps.length;
+  var layerCompsCount = activeDocument.layerComps.length;
   
   // Handle both cases where a doc has defined layer comps and also where it does not
   if (layerCompsCount > 0) {  
@@ -97,46 +138,37 @@ function main()
     }*/  
   } else {
     var layers = new Array();
-    getVisibleTextLayers(app.activeDocument, layers);
+    getVisibleTextLayers(activeDocument, layers);
+
+    var fillLayerRef = activeDocument.artLayers.add();
+    fillLayerRef.name = "Hints background color";
+    fillLayerRef.kind = LayerKind.NORMAL;
         
     for (layerIndex = 0; layerIndex < layers.length; layerIndex++) {
       layer = layers[layerIndex];
       
       // CREATE TEXT (HINT) LAYER
-      var artLayerRef = app.activeDocument.artLayers.add();
-
+      var artLayerRef = activeDocument.artLayers.add();
       artLayerRef.kind = LayerKind.TEXT;
       
       // Set the contents of the text layer
-      var textItemRef = artLayerRef.textItem
-      textItemRef.contents = layer.typename;
-      //textItemRef.color = 
-      textItemRef.size = 18;
+      var textItemRef = artLayerRef.textItem;
+      textItemRef.contents = getFontDisplay(layer.textItem);
+      
+      var textColor = new SolidColor();
+      textColor.rgb.red = 255;
+      textColor.rgb.green = 255;
+      textColor.rgb.blue = 255;
+      
+      textItemRef.color = textColor;
+      textItemRef.size = 6;
       
       //artLayerRef.translate(500, 500); // move relative to it's original position
-      positionLayer(artLayerRef, layer.bounds[0], layer.bounds[1])
-      
-      // CREATE FILL LAYER
-      var fillLayerRef = app.activeDocument.artLayers.add();
-      
-      // Determine the layer bounds
-      var a = [fillLayerRef.bounds[0], fillLayerRef.bounds[1]];
-      var b = [fillLayerRef.bounds[2], fillLayerRef.bounds[1]];
-      var c = [fillLayerRef.bounds[0], fillLayerRef.bounds[3]];
-      var d = [fillLayerRef.bounds[2], fillLayerRef.bounds[3]];
-      
-      app.activeDocument.selection.select([a, b, c, d], SelectionType.REPLACE);
-      
-      // Fill the backing layer with background fill color
-      var fillColor = new SolidColor();
-      fillColor.rgb.red = 255;
-      fillColor.rgb.green = 0;
-      fillColor.rgb.blue = 0;
-      
-      app.activeDocument.selection.fill(fillColor, ColorBlendMode.NORMAL, 75, false);
+      positionLayer(artLayerRef, layer.bounds[0], layer.bounds[1]);
+      activeDocument.activeLayer = fillLayerRef;
+      fillLayer(artLayerRef);
       
       artLayerRef = null;
-      fillLayerRef = null;
       textItemRef = null;
     }
   }
