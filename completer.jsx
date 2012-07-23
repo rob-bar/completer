@@ -60,6 +60,22 @@ function userFriendly(obj)
   }
 }
 
+
+function positionLayer( lyr, x, y ){// layerObject, Number, Number
+   // if can not move layer return
+   if(lyr.iisBackgroundLayer||lyr.positionLocked) return
+   // get the layer bounds
+   var layerBounds = lyr.bounds;
+   // get top left position
+   var layerX = layerBounds[0].value;
+   var layerY = layerBounds[1].value;
+   // the difference between where layer needs to be and is now
+   var deltaX = x-layerX;
+   var deltaY = y-layerY;
+   // move the layer into position
+   lyr.translate (deltaX, deltaY);
+}
+
 function main()
 {
   var layerCompsCount = app.activeDocument.layerComps.length;
@@ -86,8 +102,9 @@ function main()
     for (layerIndex = 0; layerIndex < layers.length; layerIndex++) {
       layer = layers[layerIndex];
       
-      // create new text layer
+      // CREATE TEXT (HINT) LAYER
       var artLayerRef = app.activeDocument.artLayers.add();
+
       artLayerRef.kind = LayerKind.TEXT;
       
       // Set the contents of the text layer
@@ -95,10 +112,31 @@ function main()
       textItemRef.contents = layer.typename;
       //textItemRef.color = 
       textItemRef.size = 18;
-      //textItemRef.position[1] = layer.bounds[1];
-      //textItemRef.position[2] = layer.bounds[2];
+      
+      //artLayerRef.translate(500, 500); // move relative to it's original position
+      positionLayer(artLayerRef, layer.bounds[0], layer.bounds[1])
+      
+      // CREATE FILL LAYER
+      var fillLayerRef = app.activeDocument.artLayers.add();
+      
+      // Determine the layer bounds
+      var a = [fillLayerRef.bounds[0], fillLayerRef.bounds[1]];
+      var b = [fillLayerRef.bounds[2], fillLayerRef.bounds[1]];
+      var c = [fillLayerRef.bounds[0], fillLayerRef.bounds[3]];
+      var d = [fillLayerRef.bounds[2], fillLayerRef.bounds[3]];
+      
+      app.activeDocument.selection.select([a, b, c, d], SelectionType.REPLACE);
+      
+      // Fill the backing layer with background fill color
+      var fillColor = new SolidColor();
+      fillColor.rgb.red = 255;
+      fillColor.rgb.green = 0;
+      fillColor.rgb.blue = 0;
+      
+      app.activeDocument.selection.fill(fillColor, ColorBlendMode.NORMAL, 75, false);
       
       artLayerRef = null;
+      fillLayerRef = null;
       textItemRef = null;
     }
   }
